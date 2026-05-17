@@ -229,11 +229,20 @@ Every parser error carries `{ line, column, snippet, expected, found }`. Errors 
 
 Round-trip property: for every instruction in every method of every corpus assembly, `disassemble_method` followed by parsing must yield byte-equivalent IL. This is the floor; any divergence is a parser bug.
 
+### 5.6 Shipped limitations (deferred to v1.1)
+
+Two limitations were taken in v1.0 to keep the parser bounded; both surface as structured errors that point the caller at the supported workaround, never as silent miscompiles.
+
+- **External member operands accept hex tokens only.** A `call`/`callvirt`/`newobj`/`ldftn`/`ldtoken` against an external method, field, or type must be written as a metadata token, e.g. `call 0x0A000005`, not `call instance void [mscorlib]System.Object::.ctor()`. Full FQN parsing for external members (assembly-qualified type names, signature sub-parsing) is the §5.3 step-3 sub-parser; it is deferred to v1.1. The assembler emits a structured error citing the unsupported form and naming the hex-token alternative.
+- **`patch_il` requires byte-size-preserving replacements.** The new instruction stream must encode to the same byte count as the range being replaced. Callers needing a size change pad with `nop` (use `nop_il_range` first) or swap the whole body via `replace_method_body`. The constraint exists because in-place patches do not need branch-offset rewriting — same-size means every label still resolves to the same offset. Auto-rewriting branches across a size change is v1.1 scope.
+
 ---
 
 ## 6. Milestone breakdown
 
 ### M0 - Skeleton (2 weeks)
+
+*Delivered:* `654041e` — Initial M0-M3 GA implementation per docs/PLAN.md.
 
 **Goal:** stdio server boots, four read tools work, one synthetic corpus assembly loads end-to-end.
 
@@ -262,6 +271,8 @@ Exit criteria: `dotnet test` green; `dotnet run --project src/ReDotnet.Server --
 
 ### M1 - Read-only complete (4 weeks)
 
+*Delivered:* `654041e` — Initial M0-M3 GA implementation per docs/PLAN.md.
+
 **Goal:** every P0 read tool from PRD section 6.1 except renames and IL patches.
 
 Tasks, grouped:
@@ -282,6 +293,8 @@ Corpus additions: `Fixtures/WithPInvoke.cs`, `WithResources.cs`, `WithExceptionH
 Exit criteria: each tool above has at least one happy-path and one edge-case test (empty result, pagination boundary, missing target). Manual run against one real-world DLL (analyst's choice from PRD user-story samples) succeeds end-to-end.
 
 ### M2 - Write path (3 weeks)
+
+*Delivered:* `654041e` — Initial M0-M3 GA implementation per docs/PLAN.md.
 
 **Goal:** renames, IL patches, save round-trip, mutation tracking.
 
@@ -309,6 +322,8 @@ Exit criteria: every mutation tool has a happy-path test that includes save + re
 
 ### M3 - Hardening / v1.0 GA (2 weeks)
 
+*Delivered:* `654041e` — Initial M0-M3 GA implementation per docs/PLAN.md. Follow-on hardening in `33b45bf` (error-envelope hardening + doc passes).
+
 **Goal:** meta-tools, docs, polish, ship.
 
 Tasks:
@@ -322,6 +337,18 @@ Tasks:
 7. **Manual acceptance pass:** run through every PRD user story (M1-M5, S1-S4, D1-D3, C1-C3) against the corpus + one real assembly. Document any gaps as v1.1 issues.
 
 Exit criteria: all P0 tools shipped, manual user-story matrix passes, README + sample client configs in place. Tag `v1.0.0`.
+
+### Post-GA additions
+
+Changes that landed after the M3 GA commit. Not part of the M0-M3 scope but worth keeping in the milestone narrative so the doc reflects what the running server actually exposes.
+
+| Commit | Change | Why |
+|---|---|---|
+| `fa6380f` | Refactor tools to take workspace context via `_registry.Run(id, ws => ...)` instead of resolving the `Workspace` themselves. | Consolidates the `WorkspaceRegistry.Get(id)` + null-check + mutation-log scoping into one helper, removing per-tool boilerplate. Mutation tools and inspection tools now share the same entry shape, which simplifies the §4.5 undo plumbing. |
+| `1541b16` | Add PowerShell publish + inspect scripts under `scripts/`. | M3 listed "sample MCP client config" as the deployment story; the scripts cover the framework-dependent and self-contained `dotnet publish` flows from the README and a one-shot tools-list inspector for smoke-testing a published binary. No source-code surface change. |
+| `1c2513e` | Add `get_field_rva_data(token, max_bytes=4096)` under `MemberTools`. | M1 fields coverage shipped `list_fields` + `get_field` (signature/modifiers/literal constant) but did not expose the raw bytes for fields whose RVA points into the PE image. Roslyn lowers `new byte[] { ... }` literals into `<PrivateImplementationDetails>` static fields plus a `RuntimeHelpers.InitializeArray` call — without RVA reads, every analyst pass on a Roslyn-built binary that uses byte literals (crackmes, embedded tables, interop constants) hits a dead end. The tool returns hex preview + base64 and caps at `max_bytes`. Promoted to a P0 entry in PRD §6.1 alongside `list_fields` / `get_field`. |
+
+These additions do not retroactively change the M0-M3 exit criteria. They are recorded here, not folded into the earlier milestone task lists, so the milestone-as-shipped reading stays accurate.
 
 ---
 

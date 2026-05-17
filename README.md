@@ -142,6 +142,7 @@ tool's parameter list.
 |---|---|
 | `list_fields` | List fields; optionally restrict to a single declaring type. |
 | `get_field` | A field's signature, modifiers, and (if literal) constant value. |
+| `get_field_rva_data` | Read the raw bytes of a field's mapped RVA initializer (e.g. Roslyn `<PrivateImplementationDetails>` byte-array literals). Returns hex preview + base64; capped at max_bytes. |
 | `list_properties` | List properties; optionally restrict to a single declaring type. |
 | `get_property` | A property's type and getter/setter method tokens. |
 | `list_events` | List events; optionally restrict to a single declaring type. |

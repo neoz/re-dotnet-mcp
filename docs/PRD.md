@@ -56,6 +56,7 @@ LLM-assisted reverse engineering has working tooling for native binaries (re-mcp
 - **C1.** As a CTF player, I want to patch a single IL instruction (e.g., `brfalse` -> `brtrue`) and save the assembly so I can flip a check without writing a dnSpy script.
 - **C2.** As a CTF player, I want to rename obfuscated method/type names persistently across a session so I can build a mental map.
 - **C3.** As a CTF player, I want to compute method MD5/SHA hashes to identify which methods stayed identical across two binary versions.
+- **C4.** As a CTF player solving a multi-stage crackme, I want to recover a staged flag *without executing the binary* by chaining read-only tools — enumerating stage types via `list_types`, reading each `Probe` body with `disassemble_method`, decoding compiler-emitted byte literals (`<PrivateImplementationDetails>` blobs) via `get_field_rva_data`, extracting embedded ciphertext with `read_resource`, and recovering assembly-level keys via `list_custom_attributes` scoped to the assembly token. The reference sample is `samples/CrackMe.Console` (7 stages spanning literal-prefix, single-byte-XOR, anti-debug, reflection dispatch, per-index transform, resource+attribute key, and cross-assembly plugin invocation).
 
 ## 5. Architecture & Conventions
 
@@ -123,6 +124,7 @@ stdio first (per the prereq). Server is a single .NET 9 console app using `Model
 
 **Fields, properties, events**
 - [ ] `list_fields` / `get_field`
+- [ ] `get_field_rva_data(token, max_bytes=4096)` — read the raw initializer bytes of a field whose RVA points into the PE image. Covers Roslyn-emitted byte-array literals (`<PrivateImplementationDetails>` blobs lowered from `new byte[] { ... }` via `RuntimeHelpers.InitializeArray`), interop tables, and string-init constants. Returns hex preview + base64; capped at `max_bytes`. (Required by C4.)
 - [ ] `list_properties` / `get_property` (with getter/setter method tokens)
 - [ ] `list_events` / `get_event`
 
@@ -151,7 +153,7 @@ stdio first (per the prereq). Server is a single .NET 9 console app using `Model
 **Resources & attributes**
 - [ ] `list_resources` — manifest resources (embedded/linked) with size/offset.
 - [ ] `read_resource(name, max_bytes=4096)` — extract bytes + auto-detect (string/PNG/PE/`.resources`).
-- [ ] `list_custom_attributes(target_token=None, type_filter=None)` — by attribute type or applied target.
+- [ ] `list_custom_attributes(target_token=None, type_filter=None)` — by attribute type or applied target. **Scoping:** with `target` omitted the listing covers TypeDef/MethodDef/FieldDef/ParamDef rows; **assembly-scope attributes (token `0x20000001`)** — including `[assembly: ...]` declarations on `AssemblyDefinition` — are only returned when `target="0x20000001"` is passed explicitly. Callers hunting for assembly-level metadata (target framework, informational version, custom marker attributes carrying decryption material) must scope the call.
 
 **Renaming (read-write)**
 - [ ] `rename_type(token, new_name, new_namespace=None)` — updates TypeDef + all TypeRefs in-module + all string-bound IL references where safe.
