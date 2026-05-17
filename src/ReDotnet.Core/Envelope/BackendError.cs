@@ -1,12 +1,14 @@
+using ModelContextProtocol;
+
 namespace ReDotnet.Core.Envelope;
 
-public sealed class BackendError : Exception
+public sealed class BackendError : McpException
 {
     public string Code { get; }
     public IReadOnlyDictionary<string, object?>? Detail { get; }
 
     public BackendError(string code, string message, IReadOnlyDictionary<string, object?>? detail = null)
-        : base(message)
+        : base($"[{code}] {message}")
     {
         Code = code;
         Detail = detail;

@@ -13,6 +13,7 @@
     <PackageReference Include="AsmResolver.PE.File" />
     <PackageReference Include="AsmResolver.Symbols.Pdb" />
     <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 
   <ItemGroup>

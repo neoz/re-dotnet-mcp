@@ -37,7 +37,21 @@ public sealed class WorkspaceRegistry
         var id = ResolveUniqueId(stem);
 
         var readerParameters = _resolverFactory.CreateReaderParameters();
-        var module = ModuleDefinition.FromFile(fullPath, readerParameters);
+        ModuleDefinition module;
+        try
+        {
+            module = ModuleDefinition.FromFile(fullPath, readerParameters);
+        }
+        catch (Exception ex)
+        {
+            throw BackendError.BadInput(
+                $"failed to load '{fullPath}': {ex.GetType().Name}: {ex.Message}",
+                new Dictionary<string, object?>
+                {
+                    ["path"] = fullPath,
+                    ["exception_type"] = ex.GetType().FullName,
+                });
+        }
         var ws = new Workspace(id, fullPath, module, _sidecarStore);
 
         _workspaces[id] = ws;
