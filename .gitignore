@@ -47,3 +47,8 @@ tests/**/Corpus/Bin/
 
 # Local publish output
 publish/
+
+# Logs
+*.log
+
+.mcp.json
