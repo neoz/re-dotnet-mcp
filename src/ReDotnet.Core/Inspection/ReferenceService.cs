@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AsmResolver.DotNet;
 using AsmResolver.PE.DotNet.Cil;
 using ReDotnet.Core.Envelope;
@@ -8,8 +9,7 @@ namespace ReDotnet.Core.Inspection;
 public sealed class ReferenceService
 {
     private readonly TokenResolver _tokens;
-    private readonly Dictionary<string, XrefIndex> _indexes = new(StringComparer.Ordinal);
-    private readonly object _gate = new();
+    private readonly ConcurrentDictionary<string, XrefIndex> _indexes = new(StringComparer.Ordinal);
 
     public ReferenceService(TokenResolver tokens) => _tokens = tokens;
 
@@ -138,18 +138,15 @@ public sealed class ReferenceService
 
     private XrefIndex GetOrBuildIndex(Workspace.Workspace ws)
     {
-        lock (_gate)
-        {
-            if (_indexes.TryGetValue(ws.AssemblyId, out var idx)) return idx;
-            idx = XrefIndex.Build(ws);
-            _indexes[ws.AssemblyId] = idx;
-            return idx;
-        }
+        // Callers already hold ws.ModuleLock (via WorkspaceRegistry.Run), so
+        // the build is naturally serialized per workspace. The cache itself
+        // is concurrent only to allow lookups across workspaces in parallel.
+        return _indexes.GetOrAdd(ws.AssemblyId, _ => XrefIndex.Build(ws));
     }
 
     public void InvalidateIndex(Workspace.Workspace ws)
     {
-        lock (_gate) _indexes.Remove(ws.AssemblyId);
+        _indexes.TryRemove(ws.AssemblyId, out _);
     }
 
     private static string NameOf(IMetadataMember m) => m switch

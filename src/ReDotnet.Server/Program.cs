@@ -101,7 +101,16 @@ public static class Program
 
         try
         {
-            await builder.Build().RunAsync().ConfigureAwait(false);
+            var host = builder.Build();
+
+            // Invalidate per-workspace caches when a workspace is evicted, so
+            // a close+reopen on the same id does not return entries built
+            // against the previously-disposed module.
+            var registry = host.Services.GetRequiredService<WorkspaceRegistry>();
+            var references = host.Services.GetRequiredService<ReDotnet.Core.Inspection.ReferenceService>();
+            registry.WorkspaceEvicting += references.InvalidateIndex;
+
+            await host.RunAsync().ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)

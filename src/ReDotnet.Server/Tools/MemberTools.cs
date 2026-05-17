@@ -25,14 +25,14 @@ public sealed class MemberTools
         [Description("Assembly id.")] string id,
         [Description("Optional type identifier to restrict scope.")] string? type = null,
         int? offset = null, int? limit = null)
-        => PageDto<FieldSummary>.From(_svc.ListFields(_registry.Get(id), type, offset, limit));
+        => _registry.Run(id, ws => PageDto<FieldSummary>.From(_svc.ListFields(ws, type, offset, limit)));
 
     [McpServerTool(Name = "get_field")]
     [Description("Get a field's signature, modifiers, and (if literal) constant value.")]
     public FieldDetail GetField(
         [Description("Assembly id.")] string id,
         [Description("Field identifier.")] string identifier)
-        => _svc.GetField(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetField(ws, identifier));
 
     [McpServerTool(Name = "list_properties")]
     [Description("List properties; optionally restrict to a single declaring type. Paginated.")]
@@ -40,14 +40,14 @@ public sealed class MemberTools
         [Description("Assembly id.")] string id,
         [Description("Optional type identifier.")] string? type = null,
         int? offset = null, int? limit = null)
-        => PageDto<PropertySummary>.From(_svc.ListProperties(_registry.Get(id), type, offset, limit));
+        => _registry.Run(id, ws => PageDto<PropertySummary>.From(_svc.ListProperties(ws, type, offset, limit)));
 
     [McpServerTool(Name = "get_property")]
     [Description("Get a property's type and getter/setter method tokens.")]
     public PropertySummary GetProperty(
         [Description("Assembly id.")] string id,
         [Description("Property identifier.")] string identifier)
-        => _svc.GetProperty(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetProperty(ws, identifier));
 
     [McpServerTool(Name = "list_events")]
     [Description("List events; optionally restrict to a single declaring type. Paginated.")]
@@ -55,12 +55,12 @@ public sealed class MemberTools
         [Description("Assembly id.")] string id,
         [Description("Optional type identifier.")] string? type = null,
         int? offset = null, int? limit = null)
-        => PageDto<EventSummary>.From(_svc.ListEvents(_registry.Get(id), type, offset, limit));
+        => _registry.Run(id, ws => PageDto<EventSummary>.From(_svc.ListEvents(ws, type, offset, limit)));
 
     [McpServerTool(Name = "get_event")]
     [Description("Get an event's handler type and add/remove method tokens.")]
     public EventSummary GetEvent(
         [Description("Assembly id.")] string id,
         [Description("Event identifier.")] string identifier)
-        => _svc.GetEvent(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetEvent(ws, identifier));
 }

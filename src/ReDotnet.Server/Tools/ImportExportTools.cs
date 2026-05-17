@@ -24,19 +24,19 @@ public sealed class ImportExportTools
         [Description("Assembly id.")] string id,
         [Description("Optional substring filter on the target module name.")] string? module_filter = null,
         int? offset = null, int? limit = null)
-        => PageDto<PInvokeEntry>.From(_svc.ListPInvokes(_registry.Get(id), module_filter, offset, limit));
+        => _registry.Run(id, ws => PageDto<PInvokeEntry>.From(_svc.ListPInvokes(ws, module_filter, offset, limit)));
 
     [McpServerTool(Name = "list_unmanaged_exports")]
     [Description("List methods exported via [DllExport]-style VTable fixups.")]
     public PageDto<UnmanagedExportEntry> ListUnmanagedExports(
         [Description("Assembly id.")] string id,
         int? offset = null, int? limit = null)
-        => PageDto<UnmanagedExportEntry>.From(_svc.ListUnmanagedExports(_registry.Get(id), offset, limit));
+        => _registry.Run(id, ws => PageDto<UnmanagedExportEntry>.From(_svc.ListUnmanagedExports(ws, offset, limit)));
 
     [McpServerTool(Name = "list_type_forwarders")]
     [Description("List TypeForwardedTo entries (exported types re-routed to another assembly).")]
     public PageDto<TypeForwarderEntry> ListTypeForwarders(
         [Description("Assembly id.")] string id,
         int? offset = null, int? limit = null)
-        => PageDto<TypeForwarderEntry>.From(_svc.ListTypeForwarders(_registry.Get(id), offset, limit));
+        => _registry.Run(id, ws => PageDto<TypeForwarderEntry>.From(_svc.ListTypeForwarders(ws, offset, limit)));
 }

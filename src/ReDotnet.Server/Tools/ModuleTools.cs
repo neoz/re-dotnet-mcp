@@ -14,18 +14,18 @@ public sealed class ModuleTools
     [McpServerTool(Name = "get_module_info")]
     [Description("Module-level metadata: name, MVID, runtime/metadata versions, entry point token.")]
     public ModuleInfoDto GetModuleInfo([Description("Assembly id.")] string id)
-    {
-        var ws = _registry.Get(id);
-        var m = ws.Module;
-        return new ModuleInfoDto(
-            id: ws.AssemblyId,
-            name: m.Name?.ToString() ?? "<anonymous>",
-            mvid: m.Mvid.ToString("D"),
-            runtime_version: m.RuntimeVersion ?? "",
-            metadata_version: m.DotNetDirectory?.Metadata?.MajorVersion + "." +
-                              m.DotNetDirectory?.Metadata?.MinorVersion,
-            entry_point: m.ManagedEntryPointMethod is { } ep ? $"0x{ep.MetadataToken.ToUInt32():X8}" : null);
-    }
+        => _registry.Run(id, ws =>
+        {
+            var m = ws.Module;
+            return new ModuleInfoDto(
+                id: ws.AssemblyId,
+                name: m.Name?.ToString() ?? "<anonymous>",
+                mvid: m.Mvid.ToString("D"),
+                runtime_version: m.RuntimeVersion ?? "",
+                metadata_version: m.DotNetDirectory?.Metadata?.MajorVersion + "." +
+                                  m.DotNetDirectory?.Metadata?.MinorVersion,
+                entry_point: m.ManagedEntryPointMethod is { } ep ? $"0x{ep.MetadataToken.ToUInt32():X8}" : null);
+        });
 }
 
 public sealed record ModuleInfoDto(

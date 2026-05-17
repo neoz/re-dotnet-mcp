@@ -22,12 +22,12 @@ public sealed class TokenTools
     public ResolveTokenResultDto ResolveToken(
         [Description("Assembly id.")] string id,
         [Description("Identifier in any of the four supported forms.")] string identifier)
-    {
-        var ws = _registry.Get(id);
-        var m = _resolver.Resolve(ws, identifier);
-        var kind = TokenHelpers.KindOf(m);
-        var name = (m as AsmResolver.DotNet.INameProvider)?.Name?.ToString() ?? "<anonymous>";
-        var fullName = (m as AsmResolver.DotNet.IFullNameProvider)?.FullName;
-        return new ResolveTokenResultDto(TokenHelpers.FormatToken(m.MetadataToken), kind, name, fullName);
-    }
+        => _registry.Run(id, ws =>
+        {
+            var m = _resolver.Resolve(ws, identifier);
+            var kind = TokenHelpers.KindOf(m);
+            var name = (m as AsmResolver.DotNet.INameProvider)?.Name?.ToString() ?? "<anonymous>";
+            var fullName = (m as AsmResolver.DotNet.IFullNameProvider)?.FullName;
+            return new ResolveTokenResultDto(TokenHelpers.FormatToken(m.MetadataToken), kind, name, fullName);
+        });
 }

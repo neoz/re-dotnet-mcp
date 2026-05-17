@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using AsmResolver.DotNet;
+using AsmResolver.IO;
 using ReDotnet.Core.Envelope;
 using ReDotnet.Core.Sidecar;
 
@@ -11,6 +12,7 @@ public sealed class WorkspaceRegistry
     private readonly ConcurrentDictionary<string, string> _pathToId = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModuleResolverFactory _resolverFactory;
     private readonly SidecarStore _sidecarStore;
+    private readonly object _openLock = new();
 
     public WorkspaceRegistry(ModuleResolverFactory resolverFactory, SidecarStore sidecarStore)
     {
@@ -24,39 +26,48 @@ public sealed class WorkspaceRegistry
         if (!File.Exists(fullPath))
             throw BackendError.NotFound("file", path);
 
-        if (_pathToId.TryGetValue(fullPath, out var existingId))
+        lock (_openLock)
         {
-            if (requestedId is not null && requestedId != existingId)
+            if (_pathToId.TryGetValue(fullPath, out var existingId))
+            {
+                if (requestedId is not null && requestedId != existingId)
+                    throw BackendError.BadInput(
+                        $"path '{fullPath}' is already open as id '{existingId}'; refuse to re-open with different id",
+                        new Dictionary<string, object?> { ["existing_id"] = existingId });
+                return _workspaces[existingId];
+            }
+
+            var stem = requestedId ?? Path.GetFileNameWithoutExtension(fullPath);
+            var id = ResolveUniqueId(stem);
+
+            // Each workspace owns its own file service so Close() can release
+            // the memory-mapped file handle without affecting other workspaces.
+            var fileService = new MemoryMappedFileService();
+            var readerParameters = _resolverFactory.CreateReaderParameters();
+            readerParameters.PEReaderParameters.FileService = fileService;
+
+            ModuleDefinition module;
+            try
+            {
+                module = ModuleDefinition.FromFile(fullPath, readerParameters);
+            }
+            catch (Exception ex)
+            {
+                fileService.Dispose();
                 throw BackendError.BadInput(
-                    $"path '{fullPath}' is already open as id '{existingId}'; refuse to re-open with different id",
-                    new Dictionary<string, object?> { ["existing_id"] = existingId });
-            return _workspaces[existingId];
-        }
+                    $"failed to load '{fullPath}': {ex.GetType().Name}: {ex.Message}",
+                    new Dictionary<string, object?>
+                    {
+                        ["path"] = fullPath,
+                        ["exception_type"] = ex.GetType().FullName,
+                    });
+            }
+            var ws = new Workspace(id, fullPath, module, fileService, _sidecarStore);
 
-        var stem = requestedId ?? Path.GetFileNameWithoutExtension(fullPath);
-        var id = ResolveUniqueId(stem);
-
-        var readerParameters = _resolverFactory.CreateReaderParameters();
-        ModuleDefinition module;
-        try
-        {
-            module = ModuleDefinition.FromFile(fullPath, readerParameters);
+            _workspaces[id] = ws;
+            _pathToId[fullPath] = id;
+            return ws;
         }
-        catch (Exception ex)
-        {
-            throw BackendError.BadInput(
-                $"failed to load '{fullPath}': {ex.GetType().Name}: {ex.Message}",
-                new Dictionary<string, object?>
-                {
-                    ["path"] = fullPath,
-                    ["exception_type"] = ex.GetType().FullName,
-                });
-        }
-        var ws = new Workspace(id, fullPath, module, _sidecarStore);
-
-        _workspaces[id] = ws;
-        _pathToId[fullPath] = id;
-        return ws;
     }
 
     private string ResolveUniqueId(string stem)
@@ -83,11 +94,42 @@ public sealed class WorkspaceRegistry
 
     public IReadOnlyList<Workspace> All() => _workspaces.Values.ToList();
 
+    /// Acquire the workspace's <see cref="Workspace.ModuleLock"/> and run
+    /// <paramref name="fn"/>. All tools that touch <c>ws.Module</c> must go
+    /// through this gate (AsmResolver is not thread-safe on concurrent reads).
+    public T Run<T>(string id, Func<Workspace, T> fn)
+    {
+        var ws = Get(id);
+        lock (ws.ModuleLock) return fn(ws);
+    }
+
+    public void Run(string id, Action<Workspace> action)
+    {
+        var ws = Get(id);
+        lock (ws.ModuleLock) action(ws);
+    }
+
+    /// Raised inside the workspace's <see cref="Workspace.ModuleLock"/> when
+    /// the workspace is being evicted, before its module is disposed. Lets
+    /// downstream caches keyed by <see cref="Workspace.AssemblyId"/> drop
+    /// entries that reference the soon-to-be-disposed module.
+    public event Action<Workspace>? WorkspaceEvicting;
+
     public bool Close(string id, bool save)
     {
-        if (!_workspaces.TryRemove(id, out var ws)) return false;
-        _pathToId.TryRemove(ws.OriginalPath, out _);
-        if (save) ws.SaveSidecar();
-        return true;
+        if (!_workspaces.TryGetValue(id, out var ws)) return false;
+        // Drain any in-flight tool calls on this workspace before evicting.
+        // Lock order matches Open: _openLock then ModuleLock (Open never
+        // takes ModuleLock, so there is no inversion).
+        lock (_openLock)
+        lock (ws.ModuleLock)
+        {
+            if (!_workspaces.TryRemove(id, out _)) return false;
+            _pathToId.TryRemove(ws.OriginalPath, out _);
+            if (save) ws.SaveSidecar();
+            try { WorkspaceEvicting?.Invoke(ws); }
+            finally { ws.Dispose(); }
+            return true;
+        }
     }
 }

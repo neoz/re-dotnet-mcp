@@ -35,7 +35,7 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Token to annotate.")] string token,
         [Description("Comment text, or null to clear.")] string? text)
-        => _sidecar.SetComment(_registry.Get(id), token, text);
+        => _registry.Run(id, ws => _sidecar.SetComment(ws, token, text));
 
     [McpServerTool(Name = "set_method_il_comment")]
     [Description("Set or clear an IL-offset-scoped comment inside a method.")]
@@ -44,7 +44,7 @@ public sealed class MutationTools
         [Description("Method token.")] string method_token,
         [Description("IL offset (e.g. 'IL_0020' or '0x0020').")] string il_offset,
         [Description("Comment text, or null to clear.")] string? text)
-        => _sidecar.SetIlComment(_registry.Get(id), method_token, il_offset, text);
+        => _registry.Run(id, ws => _sidecar.SetIlComment(ws, method_token, il_offset, text));
 
     [McpServerTool(Name = "set_bookmark")]
     [Description("Add a bookmark targeting a token.")]
@@ -52,14 +52,14 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Token to bookmark.")] string token,
         [Description("Optional human description.")] string? description = null)
-        => _sidecar.SetBookmark(_registry.Get(id), token, description);
+        => _registry.Run(id, ws => _sidecar.SetBookmark(ws, token, description));
 
     [McpServerTool(Name = "delete_bookmark")]
     [Description("Remove a bookmark by slot.")]
     public bool DeleteBookmark(
         [Description("Assembly id.")] string id,
         [Description("Bookmark slot.")] int slot)
-        => _sidecar.DeleteBookmark(_registry.Get(id), slot);
+        => _registry.Run(id, ws => _sidecar.DeleteBookmark(ws, slot));
 
     [McpServerTool(Name = "set_color")]
     [Description("Set or clear (pass null) a sidecar color tag for a token (rrggbb).")]
@@ -67,7 +67,7 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Token to color.")] string token,
         [Description("Hex color rrggbb, or null to clear.")] string? color)
-        => _sidecar.SetColor(_registry.Get(id), token, color);
+        => _registry.Run(id, ws => _sidecar.SetColor(ws, token, color));
 
     [McpServerTool(Name = "rename_type")]
     [Description("Rename a type. Updates the TypeDef row; cross-module refs are unaffected.")]
@@ -76,7 +76,7 @@ public sealed class MutationTools
         [Description("Type identifier.")] string token,
         [Description("New simple name.")] string new_name,
         [Description("Optional new namespace.")] string? new_namespace = null)
-        => _renames.RenameType(_registry.Get(id), token, new_name, new_namespace);
+        => _registry.Run(id, ws => _renames.RenameType(ws, token, new_name, new_namespace));
 
     [McpServerTool(Name = "rename_method")]
     [Description("Rename a method.")]
@@ -84,7 +84,7 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string token,
         [Description("New name.")] string new_name)
-        => _renames.RenameMethod(_registry.Get(id), token, new_name);
+        => _registry.Run(id, ws => _renames.RenameMethod(ws, token, new_name));
 
     [McpServerTool(Name = "rename_field")]
     [Description("Rename a field.")]
@@ -92,7 +92,7 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Field identifier.")] string token,
         [Description("New name.")] string new_name)
-        => _renames.RenameField(_registry.Get(id), token, new_name);
+        => _registry.Run(id, ws => _renames.RenameField(ws, token, new_name));
 
     [McpServerTool(Name = "rename_parameter")]
     [Description("Rename a method parameter.")]
@@ -101,7 +101,7 @@ public sealed class MutationTools
         [Description("Method identifier.")] string method_token,
         [Description("Parameter index (0-based, before 'this').")] int index,
         [Description("New name.")] string new_name)
-        => _renames.RenameParameter(_registry.Get(id), method_token, index, new_name);
+        => _registry.Run(id, ws => _renames.RenameParameter(ws, method_token, index, new_name));
 
     [McpServerTool(Name = "rename_local")]
     [Description("Rename a local variable. Written to the sidecar (PortablePdb writeback v1.1+).")]
@@ -110,7 +110,7 @@ public sealed class MutationTools
         [Description("Method identifier.")] string method_token,
         [Description("Local index.")] int index,
         [Description("New name.")] string new_name)
-        => _renames.RenameLocal(_registry.Get(id), method_token, index, new_name);
+        => _registry.Run(id, ws => _renames.RenameLocal(ws, method_token, index, new_name));
 
     [McpServerTool(Name = "patch_il")]
     [Description("Replace IL starting at offset with assembled new_il. Must match length exactly; pad with nops.")]
@@ -119,7 +119,7 @@ public sealed class MutationTools
         [Description("Method identifier.")] string method_token,
         [Description("IL offset to start patching at (e.g. 'IL_0020').")] string offset,
         [Description("ilasm-subset text for the new instructions.")] string new_il)
-        => _il.PatchIl(_registry.Get(id), method_token, offset, new_il);
+        => _registry.Run(id, ws => _il.PatchIl(ws, method_token, offset, new_il));
 
     [McpServerTool(Name = "nop_il_range")]
     [Description("Replace IL instructions in [start_offset, end_offset) with nops preserving length.")]
@@ -128,7 +128,7 @@ public sealed class MutationTools
         [Description("Method identifier.")] string method_token,
         [Description("Start offset (inclusive).")] string start_offset,
         [Description("End offset (exclusive).")] string end_offset)
-        => _il.NopIlRange(_registry.Get(id), method_token, start_offset, end_offset);
+        => _registry.Run(id, ws => _il.NopIlRange(ws, method_token, start_offset, end_offset));
 
     [McpServerTool(Name = "replace_method_body")]
     [Description("Replace the entire IL body of a method with the assembled il_text.")]
@@ -136,15 +136,15 @@ public sealed class MutationTools
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string method_token,
         [Description("ilasm-subset text for the entire body.")] string il_text)
-        => _il.ReplaceMethodBody(_registry.Get(id), method_token, il_text);
+        => _registry.Run(id, ws => _il.ReplaceMethodBody(ws, method_token, il_text));
 
     [McpServerTool(Name = "undo")]
     [Description("Pop and revert the most recent mutation for this assembly.")]
     public MutationLogEntry? Undo([Description("Assembly id.")] string id)
-        => _undo.Undo(_registry.Get(id));
+        => _registry.Run(id, ws => _undo.Undo(ws));
 
     [McpServerTool(Name = "redo")]
     [Description("Re-apply the most recently undone mutation for this assembly.")]
     public MutationLogEntry? Redo([Description("Assembly id.")] string id)
-        => _undo.Redo(_registry.Get(id));
+        => _registry.Run(id, ws => _undo.Redo(ws));
 }

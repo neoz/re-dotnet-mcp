@@ -22,17 +22,17 @@ public sealed class SidecarTools
     public string? GetComment(
         [Description("Assembly id.")] string id,
         [Description("Token to look up (e.g. '0x06000123').")] string token)
-        => _svc.GetComment(_registry.Get(id), token);
+        => _registry.Run(id, ws => _svc.GetComment(ws, token));
 
     [McpServerTool(Name = "list_bookmarks")]
     [Description("List all bookmarks from the sidecar.")]
     public IReadOnlyList<BookmarkEntry> ListBookmarks([Description("Assembly id.")] string id)
-        => _svc.ListBookmarks(_registry.Get(id));
+        => _registry.Run(id, ws => _svc.ListBookmarks(ws));
 
     [McpServerTool(Name = "get_color")]
     [Description("Get the sidecar color tag for a token, if any.")]
     public string? GetColor(
         [Description("Assembly id.")] string id,
         [Description("Token to look up.")] string token)
-        => _svc.GetColor(_registry.Get(id), token);
+        => _registry.Run(id, ws => _svc.GetColor(ws, token));
 }

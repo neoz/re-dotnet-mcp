@@ -26,8 +26,12 @@ public sealed class LifecycleTools
         [Description("Optional explicit assembly_id to use instead of the filename stem.")] string? assembly_id = null)
     {
         var ws = _registry.Open(path, assembly_id);
+        // Snapshot before any optional Close — Close disposes the module's
+        // file mapping and ws.Module access afterward is undefined.
+        var dto = _registry.Run(ws.AssemblyId, w =>
+            new OpenAssemblyResultDto(w.AssemblyId, w.OriginalPath, w.Module.Mvid.ToString("D")));
         if (!keep_open) _registry.Close(ws.AssemblyId, save: false);
-        return new OpenAssemblyResultDto(ws.AssemblyId, ws.OriginalPath, ws.Module.Mvid.ToString("D"));
+        return dto;
     }
 
     [McpServerTool(Name = "close_assembly")]
@@ -44,21 +48,34 @@ public sealed class LifecycleTools
     [Description("List currently open workspaces.")]
     public IReadOnlyList<OpenAssemblyResultDto> ListAssemblies()
     {
-        return _registry.All()
-            .Select(w => new OpenAssemblyResultDto(w.AssemblyId, w.OriginalPath, w.Module.Mvid.ToString("D")))
-            .ToList();
+        var results = new List<OpenAssemblyResultDto>();
+        foreach (var w in _registry.All())
+        {
+            // Each entry may race a concurrent Close; skip evicted workspaces
+            // rather than reading their disposed module.
+            try
+            {
+                results.Add(_registry.Run(w.AssemblyId, ws =>
+                    new OpenAssemblyResultDto(ws.AssemblyId, ws.OriginalPath, ws.Module.Mvid.ToString("D"))));
+            }
+            catch (Core.Envelope.BackendError)
+            {
+                // Closed between All() snapshot and Run() — skip.
+            }
+        }
+        return results;
     }
 
     [McpServerTool(Name = "get_assembly_info")]
     [Description("Get metadata-level information for an open assembly.")]
     public AssemblyInfoDto GetAssemblyInfo(
         [Description("Assembly id.")] string id)
-    {
-        var ws = _registry.Get(id);
-        var snap = _info.Capture(ws);
-        return new AssemblyInfoDto(
-            snap.AssemblyId, snap.Path, snap.Name, snap.Runtime, snap.TargetFramework,
-            snap.Machine, snap.Characteristics, snap.HasStrongName, snap.HasAuthenticode,
-            snap.HasPdb, snap.Mvid, snap.Streams, snap.EntryPoint);
-    }
+        => _registry.Run(id, ws =>
+        {
+            var snap = _info.Capture(ws);
+            return new AssemblyInfoDto(
+                snap.AssemblyId, snap.Path, snap.Name, snap.Runtime, snap.TargetFramework,
+                snap.Machine, snap.Characteristics, snap.HasStrongName, snap.HasAuthenticode,
+                snap.HasPdb, snap.Mvid, snap.Streams, snap.EntryPoint);
+        });
 }

@@ -28,13 +28,13 @@ public sealed class TypeTools
         [Description("Filter by visibility: public|internal|nested_public|...")] string? visibility = null,
         [Description("Pagination offset (default 0).")] int? offset = null,
         [Description("Pagination limit (default 100, max 1000).")] int? limit = null)
-    {
-        var ws = _registry.Get(id);
-        var page = _types.List(ws, filter_regex, @namespace, kind, visibility, offset, limit);
-        var dto = new Core.Envelope.Page<TypeSummaryDto>(
-            page.Items.Select(s => new TypeSummaryDto(
-                s.Token, s.Name, s.Namespace, s.FullName, s.Kind, s.Visibility, s.MethodCount, s.FieldCount)).ToList(),
-            page.Offset, page.Limit, page.Total, page.HasMore);
-        return PageDto<TypeSummaryDto>.From(dto);
-    }
+        => _registry.Run(id, ws =>
+        {
+            var page = _types.List(ws, filter_regex, @namespace, kind, visibility, offset, limit);
+            var dto = new Core.Envelope.Page<TypeSummaryDto>(
+                page.Items.Select(s => new TypeSummaryDto(
+                    s.Token, s.Name, s.Namespace, s.FullName, s.Kind, s.Visibility, s.MethodCount, s.FieldCount)).ToList(),
+                page.Offset, page.Limit, page.Total, page.HasMore);
+            return PageDto<TypeSummaryDto>.From(dto);
+        });
 }

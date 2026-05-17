@@ -23,7 +23,7 @@ public sealed class ResourceTools
     public PageDto<ManifestResourceInfo> ListResources(
         [Description("Assembly id.")] string id,
         int? offset = null, int? limit = null)
-        => PageDto<ManifestResourceInfo>.From(_svc.ListResources(_registry.Get(id), offset, limit));
+        => _registry.Run(id, ws => PageDto<ManifestResourceInfo>.From(_svc.ListResources(ws, offset, limit)));
 
     [McpServerTool(Name = "read_resource")]
     [Description("Read a manifest resource, capped at max_bytes; returns hex preview + auto-detected encoding.")]
@@ -31,7 +31,7 @@ public sealed class ResourceTools
         [Description("Assembly id.")] string id,
         [Description("Resource name (matches the manifest entry exactly).")] string name,
         [Description("Cap on bytes returned (default 4096).")] int max_bytes = 4096)
-        => _svc.ReadResource(_registry.Get(id), name, max_bytes);
+        => _registry.Run(id, ws => _svc.ReadResource(ws, name, max_bytes));
 
     [McpServerTool(Name = "list_custom_attributes")]
     [Description("List custom attributes by attribute-type substring and/or owner token. Both filters optional.")]
@@ -40,5 +40,5 @@ public sealed class ResourceTools
         [Description("Optional owner identifier to scope the listing.")] string? target = null,
         [Description("Optional substring filter on the attribute type's full name.")] string? type_filter = null,
         int? offset = null, int? limit = null)
-        => PageDto<CustomAttrInfo>.From(_svc.ListCustomAttributes(_registry.Get(id), target, type_filter, offset, limit));
+        => _registry.Run(id, ws => PageDto<CustomAttrInfo>.From(_svc.ListCustomAttributes(ws, target, type_filter, offset, limit)));
 }

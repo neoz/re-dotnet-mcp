@@ -22,26 +22,26 @@ public sealed class MethodDetailTools
     public MethodDetail GetMethod(
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string identifier)
-        => _svc.GetMethod(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetMethod(ws, identifier));
 
     [McpServerTool(Name = "disassemble_method")]
     [Description("Get the IL listing for a method with offsets, opcodes, and resolved operands.")]
     public DisassembledMethod Disassemble(
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string identifier)
-        => _svc.Disassemble(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.Disassemble(ws, identifier));
 
     [McpServerTool(Name = "get_method_locals")]
     [Description("Get the local variable signatures for a method.")]
     public IReadOnlyList<LocalVariableInfo> GetLocals(
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string identifier)
-        => _svc.GetLocals(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetLocals(ws, identifier));
 
     [McpServerTool(Name = "get_method_exception_handlers")]
     [Description("Get the try/catch/filter/finally regions for a method.")]
     public IReadOnlyList<ExceptionHandlerInfo> GetEhs(
         [Description("Assembly id.")] string id,
         [Description("Method identifier.")] string identifier)
-        => _svc.GetExceptionHandlers(_registry.Get(id), identifier);
+        => _registry.Run(id, ws => _svc.GetExceptionHandlers(ws, identifier));
 }
