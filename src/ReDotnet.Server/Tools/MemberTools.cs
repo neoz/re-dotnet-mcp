@@ -34,6 +34,14 @@ public sealed class MemberTools
         [Description("Field identifier.")] string identifier)
         => _registry.Run(id, ws => _svc.GetField(ws, identifier));
 
+    [McpServerTool(Name = "get_field_rva_data")]
+    [Description("Read the raw bytes of a field's mapped RVA initializer (e.g. compiler-generated <PrivateImplementationDetails> blobs). Capped at max_bytes; returns hex preview + base64.")]
+    public FieldRvaData GetFieldRvaData(
+        [Description("Assembly id.")] string id,
+        [Description("Field identifier (token, @0xRVA, {module,token}, or FQN).")] string identifier,
+        [Description("Cap on bytes returned (default 4096).")] int max_bytes = 4096)
+        => _registry.Run(id, ws => _svc.GetFieldRvaData(ws, identifier, max_bytes));
+
     [McpServerTool(Name = "list_properties")]
     [Description("List properties; optionally restrict to a single declaring type. Paginated.")]
     public PageDto<PropertySummary> ListProperties(

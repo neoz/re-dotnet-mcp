@@ -1,3 +1,4 @@
+using AsmResolver;
 using AsmResolver.DotNet;
 using ReDotnet.Core.Envelope;
 using ReDotnet.Core.Workspace;
@@ -33,7 +34,40 @@ public sealed class MemberInspectionService
             IsLiteral: f.IsLiteral,
             IsInitOnly: f.IsInitOnly,
             Visibility: VisOf(f),
-            Constant: f.Constant?.Value?.InterpretData(f.Constant.Type).ToString());
+            Constant: f.Constant is { } c ? c.Value?.InterpretData(c.Type)?.ToString() : null);
+    }
+
+    public FieldRvaData GetFieldRvaData(Workspace.Workspace ws, string identifier, int maxBytes)
+    {
+        var m = _tokens.Resolve(ws, identifier);
+        if (m is not FieldDefinition f)
+            throw BackendError.BadInput($"'{identifier}' did not resolve to a FieldDefinition");
+        if (!f.HasFieldRva || f.FieldRva is not IReadableSegment seg)
+            throw BackendError.NotFound("field_rva", identifier);
+
+        // Logical size is the field's value-type ClassLayout.ClassSize when present
+        // (e.g. <PrivateImplementationDetails>+__StaticArrayInitTypeSize=N). The
+        // physical segment may carry trailing alignment padding.
+        int? declared = null;
+        // The static-array-init helper types are emitted in-module, so the underlying
+        // ITypeDefOrRef is a TypeDefinition we can read directly without a runtime resolve.
+        if (f.Signature?.FieldType?.GetUnderlyingTypeDefOrRef() is TypeDefinition typeDef
+            && typeDef.ClassLayout is { } cl && cl.ClassSize > 0)
+            declared = (int)cl.ClassSize;
+
+        var data = seg.ToArray();
+        var cap = Math.Max(0, maxBytes);
+        var capped = data.Length > cap ? data[..cap] : data;
+        return new FieldRvaData(
+            Token: TokenFormatHelper.Hex(f),
+            Name: f.Name?.ToString() ?? "",
+            DeclaringType: f.DeclaringType?.FullName ?? "<global>",
+            DeclaredSize: declared,
+            TotalBytes: data.Length,
+            BytesReturned: capped.Length,
+            Truncated: capped.Length < data.Length,
+            HexPreview: Convert.ToHexString(capped[..Math.Min(64, capped.Length)]),
+            DataB64: Convert.ToBase64String(capped));
     }
 
     public Page<PropertySummary> ListProperties(Workspace.Workspace ws, string? type, int? offset, int? limit)
@@ -130,6 +164,11 @@ public sealed record FieldSummary(
 public sealed record FieldDetail(
     string Token, string Name, string DeclaringType, string Type,
     bool IsStatic, bool IsLiteral, bool IsInitOnly, string Visibility, string? Constant);
+
+public sealed record FieldRvaData(
+    string Token, string Name, string DeclaringType,
+    int? DeclaredSize, int TotalBytes, int BytesReturned, bool Truncated,
+    string HexPreview, string DataB64);
 
 public sealed record PropertySummary(
     string Token, string Name, string DeclaringType, string Type,

@@ -125,10 +125,8 @@ internal sealed class IlLexer
     {
         var startLine = _line; var startCol = _col; var start = _pos;
         if (_src[_pos] == '-') Advance();
-        var isHex = false;
         if (_pos + 1 < _src.Length && _src[_pos] == '0' && (_src[_pos + 1] == 'x' || _src[_pos + 1] == 'X'))
         {
-            isHex = true;
             Advance(); Advance();
             while (_pos < _src.Length && IsHex(_src[_pos])) Advance();
             return new IlToken(IlTokenKind.HexNumber, _src[start.._pos], startLine, startCol);
