@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "process-start",
+    "Preset": "process",
+    "MatchType": "System.Diagnostics.Process",
+    "MatchMember": "Start",
+    "Severity": "medium",
+    "Rationale": "Process.Start spawns external commands; data flow to its arguments is a likely injection sink."
+  }
+]

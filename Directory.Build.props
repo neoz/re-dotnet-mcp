@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>NU1903;NU1902</WarningsNotAsErrors>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+</Project>

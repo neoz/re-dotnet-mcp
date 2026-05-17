@@ -1,0 +1,43 @@
+# Build output
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test results
+TestResults/
+*.coverage
+*.coveragexml
+coverage.*.xml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# re-dotnet sidecars (project-level rule: ignore by default; analysts opt in per-repo)
+.redotnet/
+
+# Claude Code local state
+.claude/
+
+# Test corpus temp output
+tests/**/Corpus/Bin/

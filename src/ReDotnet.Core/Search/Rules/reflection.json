@@ -1,0 +1,42 @@
+[
+  {
+    "Id": "activator-create-instance",
+    "Preset": "reflection",
+    "MatchType": "System.Activator",
+    "MatchMember": "CreateInstance",
+    "Severity": "medium",
+    "Rationale": "Activator.CreateInstance with a dynamic type name commonly stages reflective loaders."
+  },
+  {
+    "Id": "assembly-load",
+    "Preset": "reflection",
+    "MatchType": "System.Reflection.Assembly",
+    "MatchMember": "Load",
+    "Severity": "medium",
+    "Rationale": "Assembly.Load on a byte array or remote path indicates dynamic code loading."
+  },
+  {
+    "Id": "assembly-load-file",
+    "Preset": "reflection",
+    "MatchType": "System.Reflection.Assembly",
+    "MatchMember": "LoadFile",
+    "Severity": "medium",
+    "Rationale": "Loads an assembly from disk path — typically a staging step in droppers."
+  },
+  {
+    "Id": "type-get-type",
+    "Preset": "reflection",
+    "MatchType": "System.Type",
+    "MatchMember": "GetType",
+    "Severity": "low",
+    "Rationale": "Type.GetType with a dynamic string often pairs with Activator.CreateInstance."
+  },
+  {
+    "Id": "method-info-invoke",
+    "Preset": "reflection",
+    "MatchType": "System.Reflection.MethodInfo",
+    "MatchMember": "Invoke",
+    "Severity": "low",
+    "Rationale": "MethodInfo.Invoke is the second half of reflection-based dispatch."
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "md5-create",
+    "Preset": "crypto",
+    "MatchType": "System.Security.Cryptography.MD5",
+    "MatchMember": "Create",
+    "Severity": "medium",
+    "Rationale": "MD5 is broken for signing/integrity; only acceptable for legacy compatibility."
+  },
+  {
+    "Id": "sha1-create",
+    "Preset": "crypto",
+    "MatchType": "System.Security.Cryptography.SHA1",
+    "MatchMember": "Create",
+    "Severity": "low",
+    "Rationale": "SHA1 is deprecated for new cryptographic uses."
+  },
+  {
+    "Id": "des-create",
+    "Preset": "crypto",
+    "MatchType": "System.Security.Cryptography.DES",
+    "MatchMember": "Create",
+    "Severity": "high",
+    "Rationale": "DES is obsolete; key size is too small for modern attackers."
+  }
+]

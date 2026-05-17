@@ -1,0 +1,34 @@
+[
+  {
+    "Id": "binary-formatter-deserialize",
+    "Preset": "deserialization",
+    "MatchType": "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter",
+    "MatchMember": "Deserialize",
+    "Severity": "high",
+    "Rationale": "BinaryFormatter is unsafe across all .NET versions and enables arbitrary code execution."
+  },
+  {
+    "Id": "los-formatter-deserialize",
+    "Preset": "deserialization",
+    "MatchType": "System.Web.UI.LosFormatter",
+    "MatchMember": "Deserialize",
+    "Severity": "high",
+    "Rationale": "LosFormatter is an ASP.NET-only deserializer; same RCE risks as BinaryFormatter."
+  },
+  {
+    "Id": "soap-formatter-deserialize",
+    "Preset": "deserialization",
+    "MatchType": "System.Runtime.Serialization.Formatters.Soap.SoapFormatter",
+    "MatchMember": "Deserialize",
+    "Severity": "high",
+    "Rationale": "SoapFormatter has the same unsafe deserialization surface as BinaryFormatter."
+  },
+  {
+    "Id": "net-data-contract-deserialize",
+    "Preset": "deserialization",
+    "MatchType": "System.Runtime.Serialization.NetDataContractSerializer",
+    "MatchMember": "ReadObject",
+    "Severity": "high",
+    "Rationale": "NetDataContractSerializer carries .NET type names; can be abused for type-confusion RCE."
+  }
+]

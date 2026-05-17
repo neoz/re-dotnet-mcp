@@ -1,0 +1,18 @@
+[
+  {
+    "Id": "file-write-all-bytes",
+    "Preset": "file",
+    "MatchType": "System.IO.File",
+    "MatchMember": "WriteAllBytes",
+    "Severity": "low",
+    "Rationale": "Writes raw bytes to disk — common dropper sink."
+  },
+  {
+    "Id": "file-read-all-bytes",
+    "Preset": "file",
+    "MatchType": "System.IO.File",
+    "MatchMember": "ReadAllBytes",
+    "Severity": "low",
+    "Rationale": "Reads a file in full — often used to stage payloads or exfiltrate."
+  }
+]

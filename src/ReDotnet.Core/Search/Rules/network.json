@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "web-client-download-string",
+    "Preset": "network",
+    "MatchType": "System.Net.WebClient",
+    "MatchMember": "DownloadString",
+    "Severity": "low",
+    "Rationale": "Downloads remote content as a string; common stager pattern."
+  },
+  {
+    "Id": "web-client-download-data",
+    "Preset": "network",
+    "MatchType": "System.Net.WebClient",
+    "MatchMember": "DownloadData",
+    "Severity": "medium",
+    "Rationale": "Downloads raw bytes — frequently used to pull payloads."
+  },
+  {
+    "Id": "http-client-get-async",
+    "Preset": "network",
+    "MatchType": "System.Net.Http.HttpClient",
+    "MatchMember": "GetAsync",
+    "Severity": "low",
+    "Rationale": "Standard outbound HTTP — flag for correlation with response handling."
+  }
+]

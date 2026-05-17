@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>ReDotnet.Core</AssemblyName>
+    <RootNamespace>ReDotnet.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AsmResolver" />
+    <PackageReference Include="AsmResolver.DotNet" />
+    <PackageReference Include="AsmResolver.PE" />
+    <PackageReference Include="AsmResolver.PE.File" />
+    <PackageReference Include="AsmResolver.Symbols.Pdb" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Search\Rules\*.json" />
+  </ItemGroup>
+
+</Project>
