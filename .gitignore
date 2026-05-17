@@ -44,3 +44,6 @@ Thumbs.db
 
 # Test corpus temp output
 tests/**/Corpus/Bin/
+
+# Local publish output
+publish/
