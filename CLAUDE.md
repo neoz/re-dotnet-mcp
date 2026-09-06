@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 `re-dotnet` is an MCP (Model Context Protocol) server in .NET 9 that wraps
-AsmResolver 6.0.0 to expose .NET assembly inspection + IL patching to LLM
+AsmResolver 6.0.1 to expose .NET assembly inspection + IL patching to LLM
 clients over stdio. The design is fully spec'd in `docs/PRD.md` and
 `docs/PLAN.md` — those two are the source of truth for scope and decisions
 already made (identifier forms, sidecar shape, strong-name strategies,

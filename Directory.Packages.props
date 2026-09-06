@@ -4,11 +4,11 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AsmResolver" Version="6.0.0" />
-    <PackageVersion Include="AsmResolver.DotNet" Version="6.0.0" />
-    <PackageVersion Include="AsmResolver.PE" Version="6.0.0" />
-    <PackageVersion Include="AsmResolver.PE.File" Version="6.0.0" />
-    <PackageVersion Include="AsmResolver.Symbols.Pdb" Version="6.0.0" />
+    <PackageVersion Include="AsmResolver" Version="6.0.1" />
+    <PackageVersion Include="AsmResolver.DotNet" Version="6.0.1" />
+    <PackageVersion Include="AsmResolver.PE" Version="6.0.1" />
+    <PackageVersion Include="AsmResolver.PE.File" Version="6.0.1" />
+    <PackageVersion Include="AsmResolver.Symbols.Pdb" Version="6.0.1" />
     <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
