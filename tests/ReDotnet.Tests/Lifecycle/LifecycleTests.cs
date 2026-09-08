@@ -1,3 +1,6 @@
+using AsmResolver.PE;
+using AsmResolver.PE.DotNet.Metadata;
+using AsmResolver.PE.DotNet.Metadata.Tables;
 using ReDotnet.Core.Inspection;
 using ReDotnet.Core.Sidecar;
 using ReDotnet.Core.Workspace;
@@ -105,5 +108,63 @@ public sealed class LifecycleTests
         Assert.False(string.IsNullOrEmpty(info.Mvid));
         Assert.Contains("#~", info.Streams.ToList());
         Assert.Contains("#Strings", info.Streams.ToList());
+    }
+
+    [Fact]
+    public void Open_assembly_with_hostile_corlib_ref_version_succeeds()
+    {
+        // Obfuscators (.NET Reactor among them) set the corlib AssemblyRef
+        // version to 65535.65535.65535.65535. AsmResolver's runtime prober
+        // picks the highest corlib version it sees, maps anything >= 5 to
+        // .NET Core, then throws while selecting an implementation corlib for
+        // that impossible version. Opening must not depend on that probe.
+        var scratch = Path.Combine(Path.GetTempPath(), $"redotnet-hostile-{Guid.NewGuid():N}.dll");
+        File.Copy(_corpus.Get("Clean"), scratch);
+        var reg = NewRegistry();
+        try
+        {
+            MaxOutCorLibRefVersion(scratch);
+
+            var ws = reg.Open(scratch);
+            Assert.Contains(ws.Module.GetAllTypes(), t => t.Name == "Greeter");
+            reg.Close(ws.AssemblyId, save: false);
+        }
+        finally
+        {
+            try { if (File.Exists(scratch)) File.Delete(scratch); }
+            catch { /* leave the scratch file; the OS temp dir reclaims it */ }
+        }
+    }
+
+    /// Overwrites the four version fields of the corlib AssemblyRef row with
+    /// 0xFFFF. They are the first eight bytes of the row, so the patch is
+    /// size-preserving and leaves the rest of the metadata untouched.
+    private static void MaxOutCorLibRefVersion(string path)
+    {
+        long rowOffset;
+        {
+            var metadata = PEImage.FromFile(path).DotNetDirectory!.Metadata!;
+            var strings = metadata.GetStream<StringsStream>();
+            var table = metadata.GetStream<TablesStream>()
+                .GetTable<AssemblyReferenceRow>(TableIndex.AssemblyRef);
+
+            var index = -1;
+            for (var i = 0; i < table.Count; i++)
+            {
+                var name = strings.GetStringByIndex(table[i].Name)?.ToString();
+                if (name is "mscorlib" or "System.Runtime" or "netstandard" or "System.Private.CoreLib")
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            Assert.True(index >= 0, "corpus fixture has no corlib AssemblyRef to patch");
+            rowOffset = (long)table.Offset + index * table.Layout.RowSize;
+        }
+
+        var bytes = File.ReadAllBytes(path);
+        for (var i = 0; i < 8; i++) bytes[rowOffset + i] = 0xFF;
+        File.WriteAllBytes(path, bytes);
     }
 }

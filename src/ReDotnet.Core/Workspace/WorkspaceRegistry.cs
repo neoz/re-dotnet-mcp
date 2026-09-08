@@ -53,14 +53,28 @@ public sealed class WorkspaceRegistry
             }
             catch (Exception ex)
             {
-                fileService.Dispose();
-                throw BackendError.BadInput(
-                    $"failed to load '{fullPath}': {ex.GetType().Name}: {ex.Message}",
-                    new Dictionary<string, object?>
-                    {
-                        ["path"] = fullPath,
-                        ["exception_type"] = ex.GetType().FullName,
-                    });
+                // AsmResolver probes the target runtime while loading, and
+                // obfuscators poison that probe: a corlib AssemblyRef versioned
+                // 65535.65535.65535.65535 makes it select an impossible .NET
+                // Core implementation corlib and throw. Retry without the
+                // probe. The runtime context it builds only supplies default
+                // AssemblyRef resolution, which is opt-in per PRD 11.5, so
+                // dropping it costs nothing the inspection tools rely on.
+                try
+                {
+                    module = ModuleDefinition.FromFile(fullPath, readerParameters, createRuntimeContext: false);
+                }
+                catch
+                {
+                    fileService.Dispose();
+                    throw BackendError.BadInput(
+                        $"failed to load '{fullPath}': {ex.GetType().Name}: {ex.Message}",
+                        new Dictionary<string, object?>
+                        {
+                            ["path"] = fullPath,
+                            ["exception_type"] = ex.GetType().FullName,
+                        });
+                }
             }
             var ws = new Workspace(id, fullPath, module, fileService, _sidecarStore);
 
