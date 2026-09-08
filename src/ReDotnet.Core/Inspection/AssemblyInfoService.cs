@@ -1,6 +1,7 @@
 using AsmResolver.DotNet;
 using AsmResolver.PE.DotNet.Metadata;
 using AsmResolver.PE.File;
+using ReDotnet.Core.Envelope;
 
 namespace ReDotnet.Core.Inspection;
 
@@ -36,7 +37,16 @@ public sealed class AssemblyInfoService
             Mvid: m.Mvid.ToString("D"),
             Streams: streams,
             EntryPoint: m.ManagedEntryPointMethod is { } ep
-                ? $"0x{ep.MetadataToken.ToUInt32():X8}" : null);
+                ? $"0x{ep.MetadataToken.ToUInt32():X8}" : null,
+            ParseWarnings: ws.Diagnostics.Exceptions.Count);
+    }
+
+    /// Messages behind <see cref="AssemblyInfoSnapshot.ParseWarnings"/>. Paged
+    /// because a heavily damaged assembly can accumulate thousands of them.
+    public Page<string> ListParseDiagnostics(Workspace.Workspace ws, int? offset, int? limit)
+    {
+        var all = ws.Diagnostics.Exceptions.Select(e => e.Message).ToList();
+        return Page<string>.From(all, offset, limit);
     }
 }
 
@@ -53,4 +63,5 @@ public sealed record AssemblyInfoSnapshot(
     bool HasPdb,
     string Mvid,
     IReadOnlyList<string> Streams,
-    string? EntryPoint);
+    string? EntryPoint,
+    int ParseWarnings);

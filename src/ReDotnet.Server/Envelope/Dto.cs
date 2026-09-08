@@ -29,7 +29,8 @@ public sealed record AssemblyInfoDto(
     bool has_pdb,
     string mvid,
     IReadOnlyList<string> streams,
-    string? entry_point);
+    string? entry_point,
+    int parse_warnings);
 
 public sealed record TypeSummaryDto(
     string token,
