@@ -67,7 +67,10 @@ public sealed class LifecycleTools
     }
 
     [McpServerTool(Name = "get_assembly_info")]
-    [Description("Get metadata-level information for an open assembly.")]
+    [Description("Get metadata-level information for an open assembly. " +
+                 "parse_warnings counts recoverable metadata damage seen so far; " +
+                 "members are read lazily, so it grows as other tools touch the " +
+                 "assembly. Use list_parse_diagnostics for the messages.")]
     public AssemblyInfoDto GetAssemblyInfo(
         [Description("Assembly id.")] string id)
         => _registry.Run(id, ws =>
@@ -76,6 +79,16 @@ public sealed class LifecycleTools
             return new AssemblyInfoDto(
                 snap.AssemblyId, snap.Path, snap.Name, snap.Runtime, snap.TargetFramework,
                 snap.Machine, snap.Characteristics, snap.HasStrongName, snap.HasAuthenticode,
-                snap.HasPdb, snap.Mvid, snap.Streams, snap.EntryPoint);
+                snap.HasPdb, snap.Mvid, snap.Streams, snap.EntryPoint,
+                snap.ParseWarnings);
         });
+
+    [McpServerTool(Name = "list_parse_diagnostics")]
+    [Description("List the recoverable metadata errors AsmResolver reported while " +
+                 "reading an open assembly. Members are read lazily, so the list " +
+                 "grows as other tools touch the assembly.")]
+    public PageDto<string> ListParseDiagnostics(
+        [Description("Assembly id.")] string id,
+        int? offset = null, int? limit = null)
+        => _registry.Run(id, ws => PageDto<string>.From(_info.ListParseDiagnostics(ws, offset, limit)));
 }

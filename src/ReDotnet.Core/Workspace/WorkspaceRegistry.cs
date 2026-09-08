@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using AsmResolver;
 using AsmResolver.DotNet;
 using AsmResolver.IO;
 using ReDotnet.Core.Envelope;
@@ -46,6 +47,13 @@ public sealed class WorkspaceRegistry
             var readerParameters = _resolverFactory.CreateReaderParameters();
             readerParameters.PEReaderParameters.FileService = fileService;
 
+            // AsmResolver defaults to EmptyErrorListener, which discards
+            // recoverable metadata damage and lets a protected assembly look
+            // intact. Collect it instead. The bag outlives the load because
+            // members are read lazily, so it keeps filling as tools run.
+            var diagnostics = new DiagnosticBag();
+            readerParameters.PEReaderParameters.ErrorListener = diagnostics;
+
             ModuleDefinition module;
             try
             {
@@ -76,7 +84,7 @@ public sealed class WorkspaceRegistry
                         });
                 }
             }
-            var ws = new Workspace(id, fullPath, module, fileService, _sidecarStore);
+            var ws = new Workspace(id, fullPath, module, fileService, _sidecarStore, diagnostics);
 
             _workspaces[id] = ws;
             _pathToId[fullPath] = id;

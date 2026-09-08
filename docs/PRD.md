@@ -100,7 +100,7 @@ stdio first (per the prereq). Server is a single .NET 9 console app using `Model
 
 **Lifecycle**
 - [ ] `open_assembly(path, keep_open=True, assembly_id=None)` — load `.dll`/`.exe`/`.netmodule` via `ModuleDefinition.FromFile`.
-- [ ] `close_assembly(id, save=False)` / `save_assembly(id, path=None)` / `list_assemblies()` / `get_assembly_info(id)` — file path, runtime, target framework, machine, characteristics, strong-name state, Authenticode state, PDB presence, stream layout.
+- [ ] `close_assembly(id, save=False)` / `save_assembly(id, path=None)` / `list_assemblies()` / `get_assembly_info(id)` — file path, runtime, target framework, machine, characteristics, strong-name state, Authenticode state, PDB presence, stream layout, count of recoverable metadata-parse diagnostics seen so far (messages via `list_parse_diagnostics(id, offset, limit)`).
 
 **Module & metadata**
 - [ ] `get_module_info` — module name, MVID, runtime version, metadata version, EntryPoint token.
