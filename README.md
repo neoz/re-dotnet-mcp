@@ -105,7 +105,8 @@ tool's parameter list.
 | `open_assembly` * | Load a .NET assembly (.dll/.exe/.netmodule) into a workspace. |
 | `close_assembly` * | Evict the workspace for assembly_id. Optionally flush the sidecar first. |
 | `list_assemblies` * | List currently open workspaces. |
-| `get_assembly_info` * | Get metadata-level information for an open assembly. |
+| `get_assembly_info` * | Get metadata-level information for an open assembly, including a `parse_warnings` count. |
+| `list_parse_diagnostics` | Recoverable metadata errors AsmResolver reported while reading the assembly. Members are read lazily, so the list grows as other tools touch them. |
 
 ### Module & metadata
 
